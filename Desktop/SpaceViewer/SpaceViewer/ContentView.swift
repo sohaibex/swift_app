@@ -1,22 +1,27 @@
-//
-//  ContentView.swift
-//  SpaceViewer
-//
-//  Created by etudiant on 19/10/2023.
-//
-
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var loginVM: LoginViewModel
+    @EnvironmentObject var registerVM: RegisterViewModel
+
     var body: some View {
         NavigationView {
-            HomePage()
-                .accentColor(Color("StarWhite"))
+            if loginVM.isLoggedIn || registerVM.isLoggedIn {
+                MainTabView() // Redirect to MainTabView instead of HomePage
+                    .accentColor(Color("StarWhite"))
+            } else {
+                LoginView()
+            }
         }
     }
 }
 
 
-#Preview {
-    ContentView()
+// Only for preview purposes
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+            .environmentObject(LoginViewModel())
+            .environmentObject(RegisterViewModel())
+    }
 }

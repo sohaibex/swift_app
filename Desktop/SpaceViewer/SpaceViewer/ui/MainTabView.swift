@@ -35,7 +35,6 @@ struct SearchView: View {
     var body: some View {
         VStack {
             SearchBar(text: $searchText)
-            // Use 'searchText' to filter or fetch your data
             Spacer()
         }
     }
