@@ -1,10 +1,11 @@
 import SwiftUI
+import Photos
 
 struct DetailsPage: View {
     let apod: APOD
     @State private var showShareSheet = false
-    @State private var shareImage: UIImage?
-    
+    @State private var showSaveConfirmation = false
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -14,7 +15,6 @@ struct DetailsPage: View {
                         image.resizable()
                             .scaledToFit()
                             .cornerRadius(10)
-                            .background(LinearGradient(gradient: Gradient(colors: [Color.black.opacity(0.7), Color.clear]), startPoint: .bottom, endPoint: .center))
                     case .empty:
                         ProgressView()
                     case .failure:
@@ -28,58 +28,81 @@ struct DetailsPage: View {
                     }
                 }
                 .padding(.bottom, 20)
-                
+
                 Text(apod.title)
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(Color("StarWhite"))
                     .shadow(color: Color.black.opacity(0.7), radius: 5, x: 0, y: 2)
-                
+
                 Text(apod.explanation)
                     .font(.system(size: 16, weight: .medium, design: .rounded))
                     .foregroundColor(Color("GalaxyGray"))
                     .shadow(color: Color.black.opacity(0.5), radius: 3, x: 0, y: 1)
+
+                HStack {
+                    Spacer()
+                 
+                    Spacer()
+                }
             }
             .padding([.leading, .trailing], 20)
         }
         .background(Color("DeepSpaceBlue").ignoresSafeArea())
         .navigationBarTitle("Details", displayMode: .inline)
-        .navigationBarItems(trailing: Button(action: {
-            shareImage(url: apod.url)
-        }) {
-            Image(systemName: "square.and.arrow.up")
-                .foregroundColor(Color("StarWhite"))
+        .navigationBarItems(trailing: HStack {
+            Button(action: {
+                showShareSheet = true
+            }) {
+                Image(systemName: "square.and.arrow.up")
+                    .foregroundColor(Color("StarWhite"))
+            }
+            
+            Button(action: {
+                downloadAndSaveImage(urlString: apod.url)
+            }) {
+                Image(systemName: "square.and.arrow.down")
+                    .foregroundColor(Color.blue)
+            }
         })
-    }
-    func shareImage(url: String) {
-        guard let imageURL = URL(string: url) else {
-            print("Error: Invalid URL.")
-            return
+        .sheet(isPresented: $showShareSheet, onDismiss: {
+            showShareSheet = false
+        }) {
+            ShareSheet(activityItems: [URL(string: apod.url) ?? ""])
         }
-        
-        URLSession.shared.dataTask(with: imageURL) { data, response, error in
+        .alert(isPresented: $showSaveConfirmation) {
+            Alert(title: Text("Saved"), message: Text("The image has been saved to your gallery."), dismissButton: .default(Text("OK")))
+        }
+    }
+
+    private func downloadAndSaveImage(urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+
+        URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
                 print("Error downloading image: \(error)")
                 return
             }
-            
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                print("Error: Invalid response from server.")
-                return
-            }
-            
-            guard let data = data, let image = UIImage(data: data) else {
-                print("Error: Image data could not be loaded.")
-                return
-            }
-            
-            DispatchQueue.main.async {
-                let activityViewController = UIActivityViewController(activityItems: [image], applicationActivities: nil)
-                
-                // Present the share sheet
-                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                    windowScene.windows.first?.rootViewController?.present(activityViewController, animated: true, completion: nil)
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200, let data = data {
+                DispatchQueue.main.async {
+                    if let image = UIImage(data: data) {
+                        saveImageToGallery(image: image)
+                    }
                 }
             }
         }.resume()
     }
+
+    private func saveImageToGallery(image: UIImage) {
+        PHPhotoLibrary.requestAuthorization { status in
+            if status == .authorized {
+                UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                DispatchQueue.main.async {
+                    self.showSaveConfirmation = true
+                }
+            } else {
+                print("Permission to access photo library was denied.")
+            }
+        }
+    }
 }
+

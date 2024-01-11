@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-
 struct MainTabView: View {
     @State private var searchText = ""
     
@@ -14,42 +13,18 @@ struct MainTabView: View {
         TabView {
             HomePage()
                 .tabItem {
-                    Image(systemName: "house.fill")
-                    Text("Home")
+                    Label("Home", systemImage: "house.fill")
+                        .foregroundColor(.white)
                 }
-            
-            SearchView(searchText: $searchText)
+
+            ProfilePage()
                 .tabItem {
-                    Image(systemName: "magnifyingglass")
-                    Text("Search")
+                    Image(systemName: "person.fill")
+                        .foregroundColor(.white)
+                        .colorMultiply(.white) 
+                    Text("Profile")
                 }
-            
-            // ... Add other sections as needed
         }
-    }
-}
-
-struct SearchView: View {
-    @Binding var searchText: String
-    
-    var body: some View {
-        VStack {
-            SearchBar(text: $searchText)
-            Spacer()
-        }
-    }
-}
-
-struct SearchBar: View {
-    @Binding var text: String
-    
-    var body: some View {
-        HStack {
-            TextField("Search...", text: $text)
-                .padding(7)
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
-                .padding(.horizontal, 10)
-        }
+        .accentColor(.white)
     }
 }
